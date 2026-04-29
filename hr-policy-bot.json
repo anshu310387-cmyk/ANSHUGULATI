@@ -1,0 +1,207 @@
+{
+  "name": "Hr Policy Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hr-Policy-bot",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "aa3f8501-abf9-46fb-96ea-31edb5ef8ffa",
+      "name": "Webhook",
+      "webhookId": "dc8d8ec3-d79a-4fbd-b965-d11ada17d94d"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Z1p8ZDTJ-C1GkWdLvkTawEJ3euSg1_YY3TCQJ-Jvypc",
+          "mode": "list",
+          "cachedResultName": "HR POLICY BOT",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Z1p8ZDTJ-C1GkWdLvkTawEJ3euSg1_YY3TCQJ-Jvypc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Policies",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Z1p8ZDTJ-C1GkWdLvkTawEJ3euSg1_YY3TCQJ-Jvypc/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        0
+      ],
+      "id": "ea914310-2131-4932-a6a2-a3973d9725bf",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "eySKKibfH1sNq8Cp",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an HR Policy Assistant. Answer the employee's question based only on the HR policies provided below.\n\nHR Policies:\n{{ $('Get row(s) in sheet').all().map(row => row.json.Topic + ': ' + row.json['Policy Details']).join('\\n') }}\n\nEmployee Question: {{ $('Webhook').item.json.body.question }}\n\nAnswer in simple, friendly language. If the answer is not in the policies, say \"Please contact HR directly.\"",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        448,
+        0
+      ],
+      "id": "06f51834-4f92-4dc3-beba-46614e36d590",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        528,
+        224
+      ],
+      "id": "a55a5df4-ca02-437c-8d23-e09a4c00fb86",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "1mnox52iQSwDlJ3O",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Response><Message>{{ $json.output }}</Message></Response>",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/xml"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1024,
+        0
+      ],
+      "id": "2e6bc616-2535-4c5b-a11d-cc56907e85e5",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "sendTo": "anshu.amy@gmail.com",
+        "subject": "=HR Query Response - {{ $json.Name }}",
+        "message": "=Dear {{ $json.Name }},  Thank you for contacting HR! 🙏 \n🤖 Answer to Your Query: {{ $('Basic LLM Chain').first().json.text }}  ━━━━━━━━━━━━━━━━━━━━━━━ 📊 YOUR COMPLETE HR DASHBOARD ━━━━━━━━━━━━━━━━━━━━━━━  👤 PERSONAL INFO: - Employee ID: {{ $json['Emp ID'] }} -\nName: {{ $json.Name }} -\nDepartment: {{ $json.Department }} -\nJoining Date: {{ $json['Joining Date'] }}  🌴 LEAVE STATUS: - Balance Remaining: {{ $json['Leave Balance'] }} \ndays - Casual Leave: 12/year - Sick Leave: 6/year - \nMaternity Leave: 26 weeks - Apply: 2 days advance notice \n💰 LOAN & SALARY: - Loan Pending: ₹{{ $json['Loan Pending (₹)'] }} - \nMonthly EMI: ₹{{ $json['Loan EMI (₹)'] }} -\nSalary Date: 28th every month -\nAdvance: 50% of salary allowed  🏠 WORK FROM HOME: - WFH: 2 days/week allowed - \nApproval: Manager required - Notice: 1 day advance - Not allowed: Mondays  💻\nREMOTE WORK: - VPN mandatory - Available on calls - Internet allowance: ₹500/month  🏥 HEALTH & INSURANCE: - Medical cover: ₹3 lakhs/year - Emergency advance: ₹50,000 - Claim process: HR portal \n🎓 TRAINING & GROWTH: - Paid training days: 2/year\n- Upskilling budget: ₹10,000/year - Apply via manager approval  📝 PERFORMANCE: - Annual appraisal: March - Mid-year review: September - Rating: Shared by manager  😤\nGRIEVANCE: - Submit: HR portal - Response: 3 working days - Confidential: Yes \n🚪 EXIT PROCESS: - Notice period: 30 days - Relieving letter: 7 days - Full & Final: 45 days  📋 IMPORTANT CONTACTS: - HR Email: hr@company.com - HR Helpdesk: 1800-HR-HELP - Emergency: +91-8607779797  ━━━━━━━━━━━━━━━━━━━━━━━ This is an auto-generated response. For urgent matters contact HR directly.  Regards, HR Team 🏢",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        800,
+        0
+      ],
+      "id": "ed292819-158c-472b-a06a-fcd16744d17b",
+      "name": "Send a message",
+      "webhookId": "5407709b-1fa1-4d91-bcc6-a9e63c8ceead",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "4WtZRgS6pX5PWcqW",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "4cddad7a-7a84-497e-97d2-fb4a5c45fd1a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ad85e52950adb7eb6aab4c3ff7940e67774472b0730e6403a67d4ffd4da0c3f4"
+  },
+  "id": "NOaKmiBFMh2tAoR7",
+  "tags": []
+}
